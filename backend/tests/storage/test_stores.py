@@ -24,6 +24,12 @@ class ScriptedCursor:
         self._i += 1
         self._current = self.results[self._i] if self._i < len(self.results) else None
 
+    def executemany(self, sql: str, params=None) -> None:
+        rows = list(params or [])
+        self.queries.append((" ".join(sql.split()), rows))
+        self.rowcount = len(rows)
+        self._current = None
+
     def fetchone(self):
         current = self._current
         if isinstance(current, list):
@@ -105,6 +111,18 @@ def test_snapshot_conflict_returns_existing_id():
     assert "SELECT id FROM snapshots" in cur.queries[1][0]
 
 
+def test_snapshot_save_many_uses_batch_insert():
+    cur = ScriptedCursor([])
+    store = PgSnapshotStore(FakePool(cur))
+    assert store.save_many([]) == 0
+    assert store.save_many([_snapshot()]) == 1
+    sql, rows = cur.queries[0]
+    assert "INSERT INTO snapshots" in sql
+    assert "DO NOTHING" in sql
+    assert "RETURNING" not in sql
+    assert len(rows) == 1
+
+
 def test_snapshot_exists_and_iter():
     cur = ScriptedCursor(
         [
@@ -159,6 +177,27 @@ def test_posting_upsert_computes_period_and_normalized_title():
     assert "2026Q3" in params
     sql = cur.queries[0][0]
     assert "ON CONFLICT (id) DO UPDATE" in sql
+
+
+def test_posting_upsert_many_skips_returning():
+    posting = Posting(
+        id="p1",
+        source_id="mohrss",
+        snapshot_id="s1",
+        title="Java开发工程师",
+        company="示例",
+        city="北京",
+        published_at=date(2026, 7, 1),
+    )
+    cur = ScriptedCursor([])
+    store = PgPostingStore(FakePool(cur))
+    assert store.upsert_many([]) == 0
+    assert store.upsert_many([posting]) == 1
+    sql, rows = cur.queries[0]
+    assert "INSERT INTO postings" in sql
+    assert "DO UPDATE" in sql
+    assert "RETURNING" not in sql
+    assert len(rows) == 1
 
 
 def test_posting_iter_and_count_exclude_duplicates():

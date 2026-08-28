@@ -22,13 +22,19 @@ cd backend
 PYTHONPATH=. uv run python scripts/import_jobhive.py --ats both --download --max-items 20
 ```
 
-`--download` 只在本地缺文件时才打 manifest。全量导入把 `--max-items` 调大。
-
-按 ATS 分别导：
+`--download` 只在本地缺文件时才打 manifest。默认不封顶，每 500 条批量写入。
 
 ```bash
+cd backend
+PYTHONPATH=. uv run python scripts/import_jobhive.py --ats both
+```
+
+冒烟或限量：
+
+```bash
+PYTHONPATH=. uv run python scripts/import_jobhive.py --ats both --download --max-items 20
 PYTHONPATH=. uv run python scripts/import_jobhive.py --ats beisen --max-items 2000
-PYTHONPATH=. uv run python scripts/import_jobhive.py --ats moka --path ../data/datasets/jobhive/moka.jobs.parquet --max-items 2000
+PYTHONPATH=. uv run python scripts/import_jobhive.py --ats moka --path ../data/datasets/jobhive/moka.jobs.parquet --flush-every 1000
 ```
 
 ## 来源

@@ -138,3 +138,47 @@ def test_run_collect_respects_source_filter():
     )
     assert result["saved"] == 0
     assert result["state"] == "ok"
+
+
+def test_run_collect_flushes_in_chunks():
+    class BulkSnaps(MemorySnapshotStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.sizes: list[int] = []
+
+        def save_many(self, snapshots):
+            self.sizes.append(len(snapshots))
+            for snap in snapshots:
+                self.save(snap)
+            return len(snapshots)
+
+    class BulkPosts(MemoryPostingStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self.sizes: list[int] = []
+
+        def upsert_many(self, postings):
+            self.sizes.append(len(postings))
+            for posting in postings:
+                self.upsert(posting)
+            return len(postings)
+
+    snaps = [
+        _snap({"acb22a": f"Java{i}", "md5": str(i), "aab004": "示例", "area_": "北京市"}, f"mohrss:{i}")
+        for i in range(5)
+    ]
+    snap_store = BulkSnaps()
+    post_store = BulkPosts()
+    result = run_collect(
+        collectors={"mohrss": FakeCollector(snaps)},
+        snapshot_store=snap_store,
+        posting_store=post_store,
+        max_items=None,
+        flush_every=2,
+        detect_peer_boilerplate=False,
+    )
+    assert result["state"] == "ok"
+    assert snap_store.sizes == [2, 2, 1]
+    assert post_store.sizes == [2, 2, 1]
+    assert result["postings"] == 5
+    assert len(post_store.items) == 5

@@ -278,3 +278,27 @@ def test_zhipin_maps_salary_desc_and_post_description():
     assert posting.description
     assert "Spring" in posting.description
     assert posting.published_at == date(2024, 8, 1)
+
+
+def test_skip_peer_boilerplate_still_marks_phrases():
+    snap = _snap(
+        "moka",
+        {
+            "org_id": "x",
+            "org_name": "示例科技",
+            "job": {
+                "id": "j9",
+                "title": "Java开发工程师",
+                "description": "<p>负责 JVM 调优。五险一金，周末双休。</p>",
+                "openedAt": "2026-06-01",
+                "locations": [{"city": "北京市"}],
+            },
+        },
+        "s9",
+    )
+    out = snapshots_to_postings([snap], detect_peer_boilerplate=False)
+    text = out[0].description or ""
+    assert out[0].boilerplate_spans
+    covered = "".join(text[s:e] for s, e in out[0].boilerplate_spans)
+    assert "五险一金" in covered
+    assert "JVM" not in covered

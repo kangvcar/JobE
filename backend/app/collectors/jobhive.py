@@ -84,12 +84,13 @@ def iter_rows(path: Path) -> Iterable[dict]:
 
 
 def _iter_parquet(path: Path) -> Iterable[dict]:
-    import pandas as pd
+    import pyarrow.parquet as pq
 
-    frame = pd.read_parquet(path)
-    for rec in frame.to_dict(orient="records"):
-        if isinstance(rec, dict):
-            yield {str(k): _jsonable(v) for k, v in rec.items()}
+    parquet = pq.ParquetFile(path)
+    for batch in parquet.iter_batches(batch_size=1024):
+        for rec in batch.to_pylist():
+            if isinstance(rec, dict):
+                yield {str(k): _jsonable(v) for k, v in rec.items()}
 
 
 def resolve_local_path(ats: str, data_dir: Path, explicit: Path | None = None) -> Path | None:
@@ -143,7 +144,7 @@ class JobhiveCollector:
         ats: str,
         path: Path | None = None,
         data_dir: Path | None = None,
-        max_items: int = 2000,
+        max_items: int | None = 2000,
         allow_download: bool = False,
         client: httpx.Client | None = None,
     ) -> None:
@@ -166,7 +167,7 @@ class JobhiveCollector:
         yielded = 0
         fetched_at = datetime.now(UTC)
         for row in iter_rows(path):
-            if yielded >= self._max_items:
+            if self._max_items is not None and yielded >= self._max_items:
                 break
             ats_type = str(row.get("ats_type") or row.get("_slice") or self.ats)
             if ats_type != self.ats:

@@ -16,10 +16,21 @@ from app.storage.snapshots import PgSnapshotStore
 
 
 def main(argv: list[str] | None = None) -> int:
-    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     parser = argparse.ArgumentParser(description="导入 jobhive 北森/Moka 中国切片")
     parser.add_argument("--ats", choices=("beisen", "moka", "both"), default="both")
-    parser.add_argument("--max-items", type=int, default=2000)
+    parser.add_argument(
+        "--max-items",
+        type=int,
+        default=None,
+        help="每个 ATS 最多导入多少条；默认不封顶",
+    )
+    parser.add_argument(
+        "--flush-every",
+        type=int,
+        default=500,
+        help="每多少条批量写入一次 Postgres，默认 500",
+    )
     parser.add_argument("--path", type=Path, default=None, help="单个 parquet/jsonl 路径")
     parser.add_argument("--data-dir", type=Path, default=None)
     parser.add_argument(
@@ -31,6 +42,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.path is not None and args.ats == "both":
         print("--path 时必须指定 --ats=beisen 或 --ats=moka", file=sys.stderr)
+        return 2
+    if args.flush_every < 1:
+        print("--flush-every 必须 >= 1", file=sys.stderr)
         return 2
 
     ats_list = ("beisen", "moka") if args.ats == "both" else (args.ats,)
@@ -55,7 +69,9 @@ def main(argv: list[str] | None = None) -> int:
         posting_store=PgPostingStore(pool),
         source_id=None,
         since=None,
-        max_items=args.max_items,
+        max_items=None,
+        flush_every=args.flush_every,
+        detect_peer_boilerplate=False,
     )
     print(result)
     return 0

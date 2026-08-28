@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from psycopg.types.json import Jsonb
 
@@ -15,6 +15,12 @@ INSERT INTO snapshots (id, source_id, fetched_at, url, content_hash, payload)
 VALUES (%s, %s, %s, %s, %s, %s)
 ON CONFLICT (source_id, content_hash) DO NOTHING
 RETURNING id
+"""
+
+INSERT_SNAPSHOT_BATCH = """
+INSERT INTO snapshots (id, source_id, fetched_at, url, content_hash, payload)
+VALUES (%s, %s, %s, %s, %s, %s)
+ON CONFLICT (source_id, content_hash) DO NOTHING
 """
 
 SELECT_BY_HASH = """
@@ -93,6 +99,25 @@ class PgSnapshotStore:
                 if existing is None:
                     raise RuntimeError("快照写入冲突后未能读到已有记录")
                 return existing["id"]
+
+    def save_many(self, snapshots: Sequence[Snapshot]) -> int:
+        if not snapshots:
+            return 0
+        rows = [
+            (
+                snap.id,
+                snap.source_id,
+                snap.fetched_at,
+                snap.url,
+                snap.content_hash,
+                Jsonb(snap.payload),
+            )
+            for snap in snapshots
+        ]
+        with self._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.executemany(INSERT_SNAPSHOT_BATCH, rows)
+        return len(snapshots)
 
     def exists(self, content_hash: str) -> bool:
         with self._pool.connection() as conn:

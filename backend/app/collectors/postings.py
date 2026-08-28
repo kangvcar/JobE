@@ -517,20 +517,29 @@ def posting_from_snapshot(snapshot: Snapshot) -> Posting:
 def snapshots_to_postings(
     snapshots: Iterable[Snapshot],
     existing: Sequence[Posting] = (),
+    *,
+    detect_peer_boilerplate: bool = True,
 ) -> list[Posting]:
     mapped = [posting_from_snapshot(s) for s in snapshots]
     corpus: dict[str, list[str]] = {}
-    for posting in (*existing, *mapped):
-        if posting.company and posting.description:
-            corpus.setdefault(posting.company, []).append(posting.description)
+    if detect_peer_boilerplate:
+        for posting in (*existing, *mapped):
+            if posting.company and posting.description:
+                corpus.setdefault(posting.company, []).append(posting.description)
 
     canonical: list[Posting] = [p for p in existing if p.duplicate_of is None]
     out: list[Posting] = []
     for posting in mapped:
-        peers = [
-            text for text in corpus.get(posting.company or "", []) if text != posting.description
-        ]
         if posting.description:
+            peers = (
+                [
+                    text
+                    for text in corpus.get(posting.company or "", [])
+                    if text != posting.description
+                ]
+                if detect_peer_boilerplate
+                else ()
+            )
             posting = posting.model_copy(
                 update={"boilerplate_spans": detect_boilerplate(posting.description, peers)}
             )
