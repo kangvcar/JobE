@@ -1,0 +1,6 @@
+[
+  {"id": "sk.py", "name": "Python", "aliases": ["python", "Python3"]},
+  {"id": "sk.go", "name": "Go", "aliases": ["Golang", "golang"]},
+  {"id": "sk.java", "name": "Java", "aliases": []},
+  {"id": "sk.k8s", "name": "Kubernetes", "aliases": ["K8s", "k8s"]}
+]

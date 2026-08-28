@@ -1,0 +1,4 @@
+{"id": "pair_fx_1", "tier": "gapped", "skill_judgments": [{"skill_name": "PyTorch", "verdict": "satisfied"}, {"skill_name": "CUDA", "verdict": "missing"}, {"skill_name": "分布式训练", "verdict": "missing"}, {"skill_name": "Linux", "verdict": "satisfied"}]}
+{"id": "pair_fx_2", "tier": "mismatch", "skill_judgments": [{"skill_name": "Spark", "verdict": "missing"}, {"skill_name": "Hive", "verdict": "missing"}, {"skill_name": "Kafka", "verdict": "missing"}]}
+{"id": "pair_fx_3", "tier": "strong", "skill_judgments": [{"skill_name": "STM32", "verdict": "satisfied"}, {"skill_name": "MQTT", "verdict": "satisfied"}]}
+{"id": "pair_fx_4", "tier": "mismatch", "skill_judgments": [{"skill_name": "PyTorch", "verdict": "missing"}, {"skill_name": "CUDA", "verdict": "missing"}, {"skill_name": "分布式训练", "verdict": "missing"}, {"skill_name": "Linux", "verdict": "missing"}]}

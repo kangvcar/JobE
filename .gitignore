@@ -1,0 +1,25 @@
+.env
+.env*.local
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+uv.lock
+
+node_modules/
+dist/
+.vite/
+
+# 采集快照与登录态：快照可复现，登录态绝不入库
+data/snapshots/*
+!data/snapshots/.gitkeep
+data/auth/
+*.storage_state.json
+
+.DS_Store
+
+# 本体构建时下载的第三方原始文件，不入库
+ontology/raw/

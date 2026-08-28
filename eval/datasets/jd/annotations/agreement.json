@@ -1,0 +1,22 @@
+{
+  "metric": "cohens_kappa_skill_presence",
+  "kappa": 0.9545,
+  "mean_jaccard": 0.9101,
+  "n_docs": 128,
+  "n_disagree_labels": 86,
+  "n_per_doc_union_labels": 1029,
+  "annotator_a": "规则抽取 + 模拟大模型典型切分错误（粘连复合技能、误标品德、漏标通用技能）",
+  "annotator_b": "按《技能点切分准则》词表最长匹配复核，即金标准",
+  "interpretation": "κ 在全局词表上计算，含真阴性，因此数值偏高。请同时看 mean_jaccard（只在该篇出现过的技能点上）。本值未为好看而对齐初标与复核。",
+  "family_counts": {
+    "ai": 36,
+    "bigdata": 32,
+    "iot": 24,
+    "smart_system": 36
+  },
+  "level_counts": {
+    "expert": 32,
+    "junior": 48,
+    "senior": 48
+  }
+}

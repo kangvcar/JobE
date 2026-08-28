@@ -1,0 +1,149 @@
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/400-italic.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --color-paper: oklch(0.968 0.007 248);
+  --color-paper-2: oklch(0.948 0.01 248);
+  --color-ink: oklch(0.236 0.028 250);
+  --color-ink-soft: oklch(0.46 0.022 250);
+  --color-ink-faint: oklch(0.62 0.016 250);
+  --color-rule: oklch(0.88 0.012 248);
+  --color-accent: oklch(0.52 0.14 38);
+  --color-accent-fg: oklch(0.985 0.008 90);
+  --color-rise: oklch(0.5 0.155 28);
+  --color-fall: oklch(0.46 0.07 175);
+  --color-held: oklch(0.62 0.08 75);
+  --color-draft: oklch(0.72 0.03 248);
+  --color-focus: oklch(0.52 0.14 38);
+
+  --radius-sm: 4px;
+  --radius-md: 4px;
+
+  --z-nav: 20;
+  --z-overlay: 40;
+  --z-dialog: 50;
+  --z-skip: 60;
+}
+
+[data-theme="dark"] {
+  --color-paper: oklch(0.205 0.02 250);
+  --color-paper-2: oklch(0.24 0.022 250);
+  --color-ink: oklch(0.93 0.012 248);
+  --color-ink-soft: oklch(0.74 0.016 248);
+  --color-ink-faint: oklch(0.58 0.014 248);
+  --color-rule: oklch(0.32 0.018 250);
+  --color-accent: oklch(0.7 0.13 42);
+  --color-accent-fg: oklch(0.18 0.03 40);
+  --color-rise: oklch(0.68 0.14 28);
+  --color-fall: oklch(0.7 0.07 175);
+  --color-held: oklch(0.76 0.08 75);
+  --color-draft: oklch(0.38 0.02 248);
+  --color-focus: oklch(0.7 0.13 42);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-ink-soft: oklch(0.34 0.03 250);
+    --color-rule: oklch(0.72 0.02 248);
+  }
+  [data-theme="dark"] {
+    --color-ink-soft: oklch(0.86 0.014 248);
+    --color-rule: oklch(0.5 0.02 250);
+  }
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+::selection {
+  background: oklch(0.52 0.14 38 / 0.28);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+.pressable:active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled),
+  .pressable:active {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: -999px;
+  top: 0;
+  z-index: 60;
+}
+.skip-link:focus {
+  inset-inline-start: 12px;
+  top: 12px;
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+  padding: 0.5rem 0.75rem;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}

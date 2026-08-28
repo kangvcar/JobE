@@ -1,0 +1,22 @@
+# Moka 招聘官网 orgId。每行：org_id<TAB>公司名
+# 均来自公开招聘页 URL（app.mokahr.com/social-recruitment/{orgId}/...）并经公开接口探活。
+moka	Moka
+geely	吉利
+mg	晨光文具
+danaher_com	丹纳赫
+noah	诺亚国际
+xiziuhc	西子联合
+shangyou	尚游游戏
+yokagames	游卡
+hypergryph	鹰角网络
+cambricon	寒武纪
+didiglobal	滴滴
+zhihu	知乎
+zte	中兴
+pwrd	完美世界
+shengqu	盛趣游戏
+yoozoo	游族网络
+voyah	岚图汽车
+ninebot	九号公司
+westlake	西湖大学
+eastmoney	东方财富

@@ -1,0 +1,7 @@
+# 评测体系独立依赖。不要写入 backend/pyproject.toml。
+# 指标（κ / Spearman / NDCG）在 eval/metrics/common.py 用标准库实现，不强制 scipy。
+faker>=33.0
+python-dateutil>=2.9
+reportlab>=4.2
+pillow>=11.0
+pytest>=8.3

@@ -1,0 +1,9 @@
+# 直连 PyPI 在国内网络下极慢（索引页响应约 9 秒，文件下载常超时），走清华镜像。
+# 需要直连时用 `uv sync --default-index https://pypi.org/simple`。
+
+[[index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[pip]
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"

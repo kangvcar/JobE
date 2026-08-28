@@ -1,0 +1,31 @@
+{
+  "_backend": "pipeline",
+  "pdf_info": [
+    {
+      "page_idx": 0,
+      "page_size": [612, 792],
+      "para_blocks": [
+        {
+          "type": "title",
+          "bbox": [100, 50, 400, 90],
+          "lines": [
+            {
+              "bbox": [100, 50, 400, 90],
+              "spans": [{"type": "text", "content": "工作经历", "bbox": [100, 50, 400, 90]}]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "bbox": [100, 100, 800, 140],
+          "lines": [
+            {
+              "bbox": [100, 100, 800, 140],
+              "spans": [{"type": "text", "content": "精通 Python 与 Go", "bbox": [100, 100, 800, 140]}]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
