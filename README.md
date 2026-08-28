@@ -42,4 +42,4 @@ uv run pytest
 
 ## 数据来源
 
-主干来源包括人社部中国公共招聘网、Moka ATS、猎聘、BOSS 直聘、Greenhouse / Lever / Ashby 等 ATS 公开接口，以及 Job-SDF、Chinese-SkillSpan 等学术数据集。采集以职位正文与时间戳为优先，不设合规边界。来源取舍见 [ADR 0001](./docs/adr/0001-data-collection-boundary.md)。
+主干来源包括人社部中国公共招聘网、Moka ATS、猎聘、BOSS 直聘、Greenhouse / Lever / Ashby 等 ATS 公开接口，以及 jobhive 托管的北森与 Moka 中国切片。不采用 Job-SDF / Chinese-SkillSpan。采集以职位正文与时间戳为优先，不设合规边界。来源取舍见 [ADR 0001](./docs/adr/0001-data-collection-boundary.md)。jobhive 导入见 [docs/data-sources/jobhive-import.md](./docs/data-sources/jobhive-import.md)。

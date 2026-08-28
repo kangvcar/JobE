@@ -60,6 +60,22 @@ ASHBY = Source(
     is_leading_indicator=False,
 )
 
+JOBHIVE_BEISEN = Source(
+    id="jobhive_beisen",
+    name="jobhive 北森切片",
+    license="ats-scrapers 托管快照（MIT 工具 + 招聘页再分发）",
+    requires_login=False,
+    is_leading_indicator=False,
+)
+
+JOBHIVE_MOKA = Source(
+    id="jobhive_moka",
+    name="jobhive Moka 切片",
+    license="ats-scrapers 托管快照（MIT 工具 + 招聘页再分发）",
+    requires_login=False,
+    is_leading_indicator=False,
+)
+
 ALL_SOURCES: tuple[Source, ...] = (
     MOHRSS,
     MOKA,
@@ -68,6 +84,8 @@ ALL_SOURCES: tuple[Source, ...] = (
     GREENHOUSE,
     LEVER,
     ASHBY,
+    JOBHIVE_BEISEN,
+    JOBHIVE_MOKA,
 )
 
 SOURCES_BY_ID: dict[str, Source] = {s.id: s for s in ALL_SOURCES}

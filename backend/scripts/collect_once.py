@@ -24,7 +24,11 @@ def main() -> int:
         snapshots.ensure_source(src)
     result = run_collect(
         collectors=_collectors(
-            max_items, delay, liepin_enabled=False, zhipin_enabled=False
+            max_items,
+            delay,
+            liepin_enabled=False,
+            zhipin_enabled=False,
+            source_id=source_id,
         ),
         snapshot_store=snapshots,
         posting_store=PgPostingStore(pool),

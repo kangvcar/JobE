@@ -17,6 +17,8 @@ def test_list_sources_includes_license():
         "greenhouse",
         "lever",
         "ashby",
+        "jobhive_beisen",
+        "jobhive_moka",
     } <= ids
     mohrss = next(row for row in data if row["id"] == "mohrss")
     assert mohrss["requires_login"] is False

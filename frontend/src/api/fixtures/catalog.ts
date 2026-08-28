@@ -40,8 +40,8 @@ export const PERIODS: string[] = [
 export const SOURCES = [
   { id: "src_mohrss", name: "中国公共招聘网", license: "政府公开数据", requires_login: false, is_leading_indicator: false },
   { id: "src_moka", name: "Moka 公开接口", license: "公开接口", requires_login: false, is_leading_indicator: false },
-  { id: "src_jobsdf", name: "Job-SDF", license: "研究许可", requires_login: false, is_leading_indicator: false },
-  { id: "src_skillspan", name: "Chinese-SkillSpan", license: "研究许可", requires_login: false, is_leading_indicator: false },
+  { id: "src_jobhive_beisen", name: "jobhive 北森", license: "ats-scrapers 托管快照", requires_login: false, is_leading_indicator: false },
+  { id: "src_jobhive_moka", name: "jobhive Moka", license: "ats-scrapers 托管快照", requires_login: false, is_leading_indicator: false },
   { id: "src_github", name: "开源仓库信号", license: "公开元数据", requires_login: false, is_leading_indicator: true },
   { id: "src_papers", name: "论文与预印本", license: "公开元数据", requires_login: false, is_leading_indicator: true },
   { id: "src_pypi", name: "包下载量", license: "公开统计", requires_login: false, is_leading_indicator: true },

@@ -8,7 +8,7 @@ JobE 的 `Posting` 需要 `title`、`company`、`city`、`published_at`/`updated
 
 ## 总建议
 
-**该写导入器，而且只写一个：jobhive 托管 parquet。**
+**该写导入器，而且只写一个：jobhive 托管 parquet。** 已落地，见 [jobhive-import.md](./jobhive-import.md)。
 
 四个来源里只有 jobhive 同时满足「能下到带正文的中文岗位」和「字段能落到 Snapshot/Posting」。它的北森 + Moka 切片加起来约 10 万行、约 400 家中国雇主，比 JobE 现在自己爬的约 20 家 Moka 官网大一个数量级。海外英语对照用同一份快照里的 Ashby / Greenhouse 即可，不必再接第二套管道。
 
@@ -133,7 +133,9 @@ Schema 文档说 `description` 截到约 10 kB。Ashby 均长 5k，截断不是�
 
 ## 导入器该怎么做
 
-本次**没有改** `backend/app/collectors/`。下面是建议，不是实现。
+已落地，见 [jobhive-import.md](./jobhive-import.md)。`source_id` 拆成 `jobhive_beisen` 与 `jobhive_moka`，方便和现网 Moka 官网采集去重。海外切片不导。下面是探活当时的建议，供对照。
+
+本次探活**没有改** `backend/app/collectors/`。当时的建议：
 
 1. 只做 `jobhive` 一个 `source_id`。读 `manifest.json` 核对 sha256，再下切片 parquet，不要一上来下 15 GB CSV。
 2. 第一批切片：`moka`、`beisen`。北森按标题过滤 IT（工程师/开发/算法/数据/后端/前端等），丢掉门店和医疗。丢掉 `beisen_legacy`。

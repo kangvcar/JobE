@@ -395,6 +395,84 @@ def _map_zhipin(snapshot: Snapshot) -> Posting:
     )
 
 
+_JOBHIVE_SALARY_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*([Kk千Ww万])?\s*[-–~至到]\s*(\d+(?:\.\d+)?)\s*([Kk千Ww万])?"
+)
+
+
+def _salary_unit_factor(unit: str | None) -> int:
+    if not unit:
+        return 1
+    folded = unit.lower()
+    if folded in ("k", "千"):
+        return 1000
+    if folded in ("w", "万"):
+        return 10000
+    return 1
+
+
+def _parse_jobhive_summary(text: str) -> tuple[int | None, int | None]:
+    raw = text.strip()
+    if not raw or raw == "面议" or "小时" in raw:
+        return None, None
+    compact = raw.replace(" ", "")
+    match = _JOBHIVE_SALARY_RE.search(compact)
+    if not match:
+        return None, None
+    low_s, unit_lo, high_s, unit_hi = match.groups()
+    factor_hi = _salary_unit_factor(unit_hi)
+    factor_lo = _salary_unit_factor(unit_lo) or factor_hi
+    if factor_lo == 1 and factor_hi > 1:
+        factor_lo = factor_hi
+    low = int(float(low_s) * factor_lo)
+    high = int(float(high_s) * (factor_hi or factor_lo))
+    if "年" in compact:
+        low //= 12
+        high //= 12
+    elif low < 1000 and high < 1000:
+        low *= 1000
+        high *= 1000
+    return low, high
+
+
+def _jobhive_salary(item: dict) -> tuple[int | None, int | None]:
+    low = _as_int(item.get("salary_min"))
+    high = _as_int(item.get("salary_max"))
+    if low is not None or high is not None:
+        if low is not None and low < 1000:
+            low *= 1000
+        if high is not None and high < 1000:
+            high *= 1000
+        return low, high
+    return _parse_jobhive_summary(str(item.get("salary_summary") or ""))
+
+
+def _map_jobhive(snapshot: Snapshot) -> Posting:
+    item = snapshot.payload
+    raw_desc = item.get("description") or ""
+    description = redact_pii(str(raw_desc)) if raw_desc else None
+    city = item.get("location")
+    city = str(city).strip() if city not in (None, "") else None
+    company = item.get("company")
+    company = str(company).strip() if company not in (None, "") else None
+    salary_min, salary_max = _jobhive_salary(item)
+    native = str(item.get("ats_id") or snapshot.content_hash[:32])
+    return Posting(
+        id=f"{snapshot.source_id}:{native}",
+        source_id=snapshot.source_id,
+        snapshot_id=snapshot.id,
+        title=str(item.get("title") or ""),
+        company=company,
+        city=city,
+        published_at=_parse_date(item.get("posted_at")),
+        updated_at=None,
+        description=description,
+        occupation_code=None,
+        salary_min=salary_min,
+        salary_max=salary_max,
+    )
+
+
 def _map_liepin(snapshot: Snapshot) -> Posting:
     payload = snapshot.payload
     text = redact_pii(str(payload.get("text") or ""))
@@ -425,6 +503,8 @@ def posting_from_snapshot(snapshot: Snapshot) -> Posting:
         posting = _map_ashby(snapshot)
     elif snapshot.source_id == "zhipin":
         posting = _map_zhipin(snapshot)
+    elif snapshot.source_id in ("jobhive_beisen", "jobhive_moka"):
+        posting = _map_jobhive(snapshot)
     else:
         posting = _map_liepin(snapshot)
     if posting.description:

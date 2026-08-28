@@ -70,7 +70,7 @@ uv run python ontology/scripts/validate.py
 
 这是核心。每条技能点都是编目里手写的中英文名、簇、方向和父节点，不是从某个词表原样倒进来的。
 
-**Job-SDF（只当锚点，不搬运文件）。** 论文 [Job-SDF](https://arxiv.org/pdf/2406.11920)（NeurIPS 2024 Datasets & Benchmarks），代码仓 [Job-SDF/benchmark](https://github.com/Job-SDF/benchmark)，主页 https://job-sdf.github.io/。作者单位含 BOSS 直聘 Career Science Lab。仓里是 2324 个技能的需求时间序列和共现三元组，**没有原始职位文本**。`dataset/entity_map` 里的技能名称表被作者以隐私为由隐去，公开仓也没有 License 文件。我们只用它确认「IT 技能点冷启动大概是两千出头这个量级」，一条名称都没拷。名称表若作者另行授权，再补对照，不进 0.1.0。
+**不采用 Job-SDF / Chinese-SkillSpan。** 公开仓没有技能名称表、没有原始职位正文，不能当本体锚点，也不做历史序列或抽取评测导入。IT 技能点规模由编目自己收口，不挂外部数据集。
 
 **O\*NET 31.0 Software Skills。** https://www.onetcenter.org/database.html ，[CC BY 4.0](https://www.onetcenter.org/license_db.html)。文件 URL：`https://www.onetcenter.org/dl_files/database/db_31_0_text.zip` 内 `Software Skills.txt`（31821 行）。这是职业分类标准里最接近技能点粒度、许可也最宽的一份。构建时按英文名或已有别名精确匹配 Workplace Example，命中则写入 `external_ids.onet`，热门技术加 `onet_hot=Y`。没有把 Excel / Word / Outlook 这类通用办公软件收进本词表：方向是新一代信息技术，不是全职业工具清单。本词表对 O\*NET 做了筛选和中文命名，不是 O\*NET 原文再分发。署名：This ontology includes information from the O\*NET 31.0 Database by the U.S. Department of Labor, Employment and Training Administration (USDOL/ETA), used under the CC BY 4.0 license. O\*NET® is a trademark of USDOL/ETA. JobE has modified this information. USDOL/ETA has not approved, endorsed, or tested these modifications.
 
@@ -156,13 +156,12 @@ ontology/
 
 ## 待补充
 
-1. Job-SDF 2324 个技能名称表（作者隐去，且仓无 License）。
-2. ESCO v1.2.1 信息技术技能子集的 URI 与 altLabel（下载要邮箱）。
-3. Wikidata 别名批量查询清单。
-4. 大典正式版相对公示稿多出的 3 个职业名称，以及数字职业 97 / 绿色职业 134 与公示稿 S/L 标记的差额。
-5. 第二、三、四、七批新职业的公示通告原文日期。
-6. `source: llm` 的别名人工通审。29 条 LLM 来源技能点本身经核对都是真实技术，无编造；已抽查出并修掉 4 处别名错误（见上「哪些表面形式被故意排除」）。剩余待定的是几条**边界情况**：`Zilliz`/`Zilliz Cloud` 挂在 Milvus 下（厂商名 vs 产品名）、`faster-whisper`/`whisper.cpp` 挂在 Whisper 下（独立的重实现项目）。这几条召回价值大于误判风险，暂时保留。
-7. `ESP8266` 应单独立技能点（当前只是从 ESP32 的别名里删掉了，并未收录）。
+1. ESCO v1.2.1 信息技术技能子集的 URI 与 altLabel（下载要邮箱）。
+2. Wikidata 别名批量查询清单。
+3. 大典正式版相对公示稿多出的 3 个职业名称，以及数字职业 97 / 绿色职业 134 与公示稿 S/L 标记的差额。
+4. 第二、三、四、七批新职业的公示通告原文日期。
+5. `source: llm` 的别名人工通审。29 条 LLM 来源技能点本身经核对都是真实技术，无编造；已抽查出并修掉 4 处别名错误（见上「哪些表面形式被故意排除」）。剩余待定的是几条**边界情况**：`Zilliz`/`Zilliz Cloud` 挂在 Milvus 下（厂商名 vs 产品名）、`faster-whisper`/`whisper.cpp` 挂在 Whisper 下（独立的重实现项目）。这几条召回价值大于误判风险，暂时保留。
+6. `ESP8266` 应单独立技能点（当前只是从 ESP32 的别名里删掉了，并未收录）。
 
 ## 本版本做了哪些取舍
 

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.collectors.ashby import AshbyCollector
 from app.collectors.greenhouse import GreenhouseCollector
+from app.collectors.jobhive import JobhiveCollector
 from app.collectors.lever import LeverCollector
 from app.collectors.liepin import LiepinCollector
 from app.collectors.mohrss import MohrssCollector
@@ -36,6 +37,7 @@ def _collectors(
     delay: float,
     liepin_enabled: bool,
     zhipin_enabled: bool = False,
+    source_id: str | None = None,
 ) -> dict:
     limiter = RateLimiter(delay)
     out: dict = {
@@ -69,6 +71,15 @@ def _collectors(
             limiter=limiter,
             delay_seconds=delay,
             max_items=max_items,
+        )
+    # jobhive 约 10 万行：无参采集不挂；必须显式 source_id，且只读本地已下载文件。
+    if source_id == "jobhive_beisen":
+        out["jobhive_beisen"] = JobhiveCollector(
+            ats="beisen", max_items=max_items, allow_download=False
+        )
+    elif source_id == "jobhive_moka":
+        out["jobhive_moka"] = JobhiveCollector(
+            ats="moka", max_items=max_items, allow_download=False
         )
     return out
 
@@ -106,6 +117,7 @@ def trigger_collect(
             settings.collect_delay_seconds,
             settings.liepin_enabled,
             settings.zhipin_enabled,
+            source_id=source_id,
         ),
         snapshot_store=snapshots,
         posting_store=PgPostingStore(pool),

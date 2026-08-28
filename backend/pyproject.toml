@@ -21,6 +21,7 @@ dependencies = [
     "datasketch>=1.6.5",
     "numpy>=2.2",
     "pandas>=2.2",
+    "pyarrow>=17",  # pandas 3 读 parquet 必需；jobhive 北森/Moka 导入器用
     "scipy>=1.15",
     "statsmodels>=0.14",
     "pymannkendall>=1.4.3",
