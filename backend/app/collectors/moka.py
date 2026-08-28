@@ -54,12 +54,14 @@ class MokaCollector:
         delay_seconds: float = 3.0,
         orgs: list[tuple[str, str]] | None = None,
         modes: tuple[str, ...] = ("social", "campus"),
+        max_per_org: int | None = 40,
     ) -> None:
         self._client = client
         self._limiter = limiter or RateLimiter(delay_seconds)
         self._max_items = max_items
         self._orgs = orgs if orgs is not None else load_orgs()
         self._modes = modes
+        self._max_per_org = max_per_org
 
     def collect(self, since: date | None = None) -> Iterable[Snapshot]:
         if not self._orgs:
@@ -77,9 +79,16 @@ class MokaCollector:
             for org_id, org_name in self._orgs:
                 if yielded >= self._max_items:
                     break
+                org_yielded = 0
                 for mode in self._modes:
+                    if yielded >= self._max_items:
+                        break
+                    if self._max_per_org is not None and org_yielded >= self._max_per_org:
+                        break
                     offset = 0
                     while yielded < self._max_items:
+                        if self._max_per_org is not None and org_yielded >= self._max_per_org:
+                            break
                         self._limiter.wait()
                         params: dict[str, Any] = {
                             "mode": mode,
@@ -97,6 +106,7 @@ class MokaCollector:
                         if not jobs:
                             break
                         fetched_at = datetime.now(UTC)
+                        stop_org = False
                         for job in jobs:
                             if not isinstance(job, dict):
                                 continue
@@ -116,8 +126,14 @@ class MokaCollector:
                                 payload=payload,
                             )
                             yielded += 1
+                            org_yielded += 1
                             if yielded >= self._max_items:
                                 break
+                            if self._max_per_org is not None and org_yielded >= self._max_per_org:
+                                stop_org = True
+                                break
+                        if stop_org or yielded >= self._max_items:
+                            break
                         if len(jobs) < PAGE_SIZE:
                             break
                         offset += PAGE_SIZE

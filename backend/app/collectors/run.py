@@ -8,6 +8,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from app.collectors.liepin import LiepinHalted
+from app.collectors.zhipin import ZhipinHalted
 from app.collectors.postings import snapshots_to_postings
 from app.domain.models import Posting, Snapshot
 from app.domain.normalization import period_from_date
@@ -88,7 +89,7 @@ def run_collect(
                         saved += 1
                     if saved >= max_items:
                         break
-            except LiepinHalted as exc:
+            except (LiepinHalted, ZhipinHalted) as exc:
                 _set_status(
                     state="halted",
                     saved=saved,

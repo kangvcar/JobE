@@ -1,0 +1,12 @@
+# Lever 公开职位 company slug。每行：board_token<TAB>公司名
+# GET https://api.lever.co/v0/postings/{token}?mode=json 探活。
+palantir	Palantir
+spotify	Spotify
+zoox	Zoox
+waabi	Waabi
+shieldai	Shield AI
+outreach	Outreach
+brilliant	Brilliant
+osaro	Osaro
+benchsci	BenchSci
+15five	15Five

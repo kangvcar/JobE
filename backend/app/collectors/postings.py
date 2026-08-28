@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Sequence
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from html import unescape
 from typing import Any
 
 from bs4 import BeautifulSoup
@@ -236,6 +237,164 @@ def _map_moka(snapshot: Snapshot) -> Posting:
     )
 
 
+def _map_greenhouse(snapshot: Snapshot) -> Posting:
+    payload = snapshot.payload
+    job = payload.get("job") if isinstance(payload.get("job"), dict) else payload
+    raw = job.get("content") or ""
+    description = redact_pii(html_to_text(unescape(raw))) if raw else None
+    loc = job.get("location") if isinstance(job.get("location"), dict) else {}
+    city = loc.get("name") if isinstance(loc, dict) else None
+    native = str(job.get("id") or snapshot.content_hash[:32])
+    return Posting(
+        id=f"{snapshot.source_id}:{native}",
+        source_id=snapshot.source_id,
+        snapshot_id=snapshot.id,
+        title=str(job.get("title") or ""),
+        company=job.get("company_name") or payload.get("board_name"),
+        city=str(city).strip() if city else None,
+        published_at=_parse_date(job.get("first_published")),
+        updated_at=_parse_date(job.get("updated_at")),
+        description=description,
+        occupation_code=None,
+        salary_min=None,
+        salary_max=None,
+    )
+
+
+def _millis_date(value: Any) -> date | None:
+    if isinstance(value, (int, float)):
+        ts = value / 1000 if value > 10_000_000_000 else float(value)
+        try:
+            return datetime.fromtimestamp(ts, tz=UTC).date()
+        except (OSError, OverflowError, ValueError):
+            return None
+    return _parse_date(value)
+
+
+def _map_lever(snapshot: Snapshot) -> Posting:
+    payload = snapshot.payload
+    job = payload.get("job") if isinstance(payload.get("job"), dict) else payload
+    raw_html = job.get("description") or ""
+    raw_plain = job.get("descriptionPlain") or ""
+    if raw_html:
+        description = redact_pii(html_to_text(raw_html))
+    elif raw_plain:
+        description = redact_pii(str(raw_plain))
+    else:
+        description = None
+    cats = job.get("categories") if isinstance(job.get("categories"), dict) else {}
+    city = cats.get("location") if isinstance(cats, dict) else None
+    pay = job.get("salaryRange") if isinstance(job.get("salaryRange"), dict) else {}
+    native = str(job.get("id") or snapshot.content_hash[:32])
+    return Posting(
+        id=f"{snapshot.source_id}:{native}",
+        source_id=snapshot.source_id,
+        snapshot_id=snapshot.id,
+        title=str(job.get("text") or job.get("title") or ""),
+        company=payload.get("board_name") or payload.get("board_token"),
+        city=str(city).strip() if city else None,
+        published_at=_millis_date(job.get("createdAt")),
+        updated_at=None,
+        description=description,
+        occupation_code=None,
+        salary_min=_as_int(pay.get("min")) if pay else None,
+        salary_max=_as_int(pay.get("max")) if pay else None,
+    )
+
+
+def _ashby_city(job: dict) -> str | None:
+    addr = job.get("address") if isinstance(job.get("address"), dict) else {}
+    postal = addr.get("postalAddress") if isinstance(addr, dict) else None
+    if isinstance(postal, dict):
+        city = postal.get("addressLocality") or postal.get("addressRegion")
+        if city and str(city).strip():
+            return str(city).strip()
+    loc = job.get("location")
+    if loc and str(loc).strip():
+        return str(loc).strip()
+    return None
+
+
+def _ashby_salary(job: dict) -> tuple[int | None, int | None]:
+    comp = job.get("compensation") if isinstance(job.get("compensation"), dict) else {}
+    buckets = list(comp.get("summaryComponents") or [])
+    for tier in comp.get("compensationTiers") or []:
+        if isinstance(tier, dict):
+            buckets.extend(tier.get("components") or [])
+    for item in buckets:
+        if isinstance(item, dict) and item.get("compensationType") == "Salary":
+            return _as_int(item.get("minValue")), _as_int(item.get("maxValue"))
+    return None, None
+
+
+def _map_ashby(snapshot: Snapshot) -> Posting:
+    payload = snapshot.payload
+    job = payload.get("job") if isinstance(payload.get("job"), dict) else payload
+    raw_html = job.get("descriptionHtml") or ""
+    raw_plain = job.get("descriptionPlain") or ""
+    if raw_html:
+        description = redact_pii(html_to_text(raw_html))
+    elif raw_plain:
+        description = redact_pii(str(raw_plain))
+    else:
+        description = None
+    salary_min, salary_max = _ashby_salary(job)
+    native = str(job.get("id") or snapshot.content_hash[:32])
+    return Posting(
+        id=f"{snapshot.source_id}:{native}",
+        source_id=snapshot.source_id,
+        snapshot_id=snapshot.id,
+        title=str(job.get("title") or ""),
+        company=payload.get("board_name") or payload.get("board_token"),
+        city=_ashby_city(job),
+        published_at=_parse_date(job.get("publishedAt")),
+        updated_at=None,
+        description=description,
+        occupation_code=None,
+        salary_min=salary_min,
+        salary_max=salary_max,
+    )
+
+
+_SALARY_DESC_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*[-–~]\s*(\d+(?:\.\d+)?)\s*([Kk千])?"
+)
+
+
+def _parse_salary_desc(text: str) -> tuple[int | None, int | None]:
+    if not text:
+        return None, None
+    match = _SALARY_DESC_RE.search(text.replace(" ", ""))
+    if not match:
+        return None, None
+    low, high, unit = match.group(1), match.group(2), match.group(3)
+    factor = 1000 if unit or float(low) < 1000 else 1
+    return int(float(low) * factor), int(float(high) * factor)
+
+
+def _map_zhipin(snapshot: Snapshot) -> Posting:
+    payload = snapshot.payload
+    job = payload.get("job") if isinstance(payload.get("job"), dict) else payload
+    raw_desc = job.get("postDescription") or job.get("description") or ""
+    description = redact_pii(html_to_text(raw_desc)) if raw_desc else None
+    salary_min, salary_max = _parse_salary_desc(str(job.get("salaryDesc") or ""))
+    native = str(job.get("encryptJobId") or snapshot.content_hash[:32])
+    return Posting(
+        id=f"{snapshot.source_id}:{native}",
+        source_id=snapshot.source_id,
+        snapshot_id=snapshot.id,
+        title=str(job.get("jobName") or job.get("title") or ""),
+        company=job.get("brandName") or payload.get("company"),
+        city=job.get("cityName") or payload.get("city"),
+        published_at=_millis_date(job.get("lastModifyTime")),
+        updated_at=None,
+        description=description,
+        occupation_code=None,
+        salary_min=salary_min,
+        salary_max=salary_max,
+    )
+
+
 def _map_liepin(snapshot: Snapshot) -> Posting:
     payload = snapshot.payload
     text = redact_pii(str(payload.get("text") or ""))
@@ -258,6 +417,14 @@ def posting_from_snapshot(snapshot: Snapshot) -> Posting:
         posting = _map_mohrss(snapshot)
     elif snapshot.source_id == "moka":
         posting = _map_moka(snapshot)
+    elif snapshot.source_id == "greenhouse":
+        posting = _map_greenhouse(snapshot)
+    elif snapshot.source_id == "lever":
+        posting = _map_lever(snapshot)
+    elif snapshot.source_id == "ashby":
+        posting = _map_ashby(snapshot)
+    elif snapshot.source_id == "zhipin":
+        posting = _map_zhipin(snapshot)
     else:
         posting = _map_liepin(snapshot)
     if posting.description:

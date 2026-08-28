@@ -1,5 +1,6 @@
 # Moka 招聘官网 orgId。每行：org_id<TAB>公司名
 # 均来自公开招聘页 URL（app.mokahr.com/social-recruitment/{orgId}/...）并经公开接口探活。
+# 2026-08-28 追加信息技术相关租户（每条当日探活成功）。完整活名单见 moka_orgs.discovered.txt。
 moka	Moka
 geely	吉利
 mg	晨光文具
@@ -20,3 +21,54 @@ voyah	岚图汽车
 ninebot	九号公司
 westlake	西湖大学
 eastmoney	东方财富
+4paradigm	第四范式
+agora	声网
+agibot	智元机器人
+amec	中微公司
+autox	AutoX
+baai	智源研究院
+bigai-ai	北京通用人工智能研究院
+biren	壁仞科技
+chaitin	长亭科技
+chinatelecomai	中国电信AI
+cixcomputing	CIX Computing
+cloudwalk	云从科技
+dahua	大华股份
+dapustor	大普微
+deeproute	元戎启行
+dji	大疆
+dolphindb	DolphinDB
+enflame	燧原科技
+enmotech	云和恩墨
+futu5	富途
+gigadevice	兆易创新
+glodon	广联达
+hytera	海能达
+icrd	上海集成电路研发中心
+iluvatar	天数智芯
+insta360	影石
+keenon	擎朗智能
+memtensor	MemTensor
+minieye	MINIEYE
+moonshot	月之暗面
+nsfocus	绿盟科技
+pcitech	先导智能
+robosense	速腾聚创
+sangfor	深信服
+se	施耐德电气
+seer	仙工智能
+shopee	Shopee
+smartmore	思谋科技
+space-t1	进迭时空
+step	阶跃星辰
+tecorigin	太初元碁
+tesla	特斯拉
+threatbook	微步在线
+tongdun	同盾科技
+tsinghuaic	紫光同芯
+visinextek	Visinex
+wps	金山办公
+xiaopeng	小鹏汽车
+yitu-inc	依图科技
+zelostech	Zelos
+zensemi	Zensemi

@@ -208,3 +208,73 @@ def test_snapshots_to_postings_wires_duplicate_and_redaction():
     assert "hr@example.com" not in (postings[1].description or "")
     assert postings[0].boilerplate_spans
     assert posting_from_snapshot(_snap("moka", job, "s1")).city == "杭州市"
+
+
+def test_greenhouse_unescapes_content_and_drops_entities():
+    body = json.loads((FIXTURES / "greenhouse_jobs.json").read_text(encoding="utf-8"))
+    posting = posting_from_snapshot(
+        _snap(
+            "greenhouse",
+            {"board_token": "stripe", "board_name": "Stripe", "job": body["jobs"][0]},
+        )
+    )
+    assert posting.title == "Account Executive, AI Sales"
+    assert posting.company == "Stripe"
+    assert posting.city == "San Francisco, CA"
+    assert posting.description
+    assert "&lt;h2&gt;" not in posting.description
+    assert "Who we are" in posting.description
+
+
+def test_lever_maps_text_title_and_salary_range():
+    jobs = json.loads((FIXTURES / "lever_jobs.json").read_text(encoding="utf-8"))
+    posting = posting_from_snapshot(
+        _snap("lever", {"board_token": "zoox", "board_name": "Zoox", "job": jobs[0]})
+    )
+    assert posting.title == "Autonomy System Test Engineer"
+    assert posting.company == "Zoox"
+    assert posting.city == "Foster City, CA"
+    assert posting.salary_min == 144000
+    assert posting.salary_max == 193000
+    assert posting.description
+    assert "autonomous" in posting.description.lower()
+
+
+def test_ashby_maps_compensation_and_locality():
+    body = json.loads((FIXTURES / "ashby_jobs.json").read_text(encoding="utf-8"))
+    posting = posting_from_snapshot(
+        _snap("ashby", {"board_token": "openai", "board_name": "OpenAI", "job": body["jobs"][0]})
+    )
+    assert posting.company == "OpenAI"
+    assert posting.city == "San Francisco"
+    assert posting.salary_min == 257000
+    assert posting.salary_max == 335000
+    assert posting.description
+    assert "GPU" in posting.description
+
+
+def test_zhipin_maps_salary_desc_and_post_description():
+    posting = posting_from_snapshot(
+        _snap(
+            "zhipin",
+            {
+                "job": {
+                    "encryptJobId": "aabbccddee0011223344556677889900",
+                    "jobName": "后端开发工程师",
+                    "brandName": "示例科技",
+                    "cityName": "北京",
+                    "salaryDesc": "20-35K",
+                    "lastModifyTime": 1722470400000,
+                    "postDescription": "岗位职责：负责 Spring 服务开发。",
+                }
+            },
+        )
+    )
+    assert posting.title == "后端开发工程师"
+    assert posting.company == "示例科技"
+    assert posting.city == "北京"
+    assert posting.salary_min == 20000
+    assert posting.salary_max == 35000
+    assert posting.description
+    assert "Spring" in posting.description
+    assert posting.published_at == date(2024, 8, 1)

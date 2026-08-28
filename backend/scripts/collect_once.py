@@ -1,4 +1,4 @@
-"""一次性采集：把合法来源的职位写入快照与职位表。"""
+"""一次性采集：把登记来源的职位写入快照与职位表。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,9 @@ def main() -> int:
     for src in ALL_SOURCES:
         snapshots.ensure_source(src)
     result = run_collect(
-        collectors=_collectors(max_items, delay, liepin_enabled=False),
+        collectors=_collectors(
+            max_items, delay, liepin_enabled=False, zhipin_enabled=False
+        ),
         snapshot_store=snapshots,
         posting_store=PgPostingStore(pool),
         source_id=source_id,

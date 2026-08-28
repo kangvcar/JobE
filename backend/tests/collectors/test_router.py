@@ -9,10 +9,18 @@ def test_list_sources_includes_license():
     client = TestClient(app)
     data = client.get("/api/collect/sources").json()
     ids = {row["id"] for row in data}
-    assert {"mohrss", "moka", "liepin"} <= ids
+    assert {
+        "mohrss",
+        "moka",
+        "liepin",
+        "zhipin",
+        "greenhouse",
+        "lever",
+        "ashby",
+    } <= ids
     mohrss = next(row for row in data if row["id"] == "mohrss")
     assert mohrss["requires_login"] is False
-    assert "个人" in mohrss["license"]
+    assert mohrss["license"]
     liepin = next(row for row in data if row["id"] == "liepin")
     assert liepin["requires_login"] is True
 

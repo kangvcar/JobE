@@ -1,0 +1,57 @@
+{
+  "code": 0,
+  "message": "Success",
+  "zpData": {
+    "hasMore": false,
+    "jobList": [
+      {
+        "encryptJobId": "aabbccddee0011223344556677889900",
+        "encryptBrandId": "brandenc001122334455",
+        "encryptBossId": "bossenc001122334455",
+        "lid": "lid-demo-001",
+        "securityId": "sec_demo_java_001",
+        "jobName": "后端开发工程师",
+        "salaryDesc": "20-35K",
+        "jobExperience": "3-5年",
+        "jobDegree": "本科",
+        "cityName": "北京",
+        "areaDistrict": "海淀区",
+        "businessDistrict": "中关村",
+        "brandName": "示例科技",
+        "brandScaleName": "100-499人",
+        "brandStageName": "B轮",
+        "brandIndustry": "互联网",
+        "jobLabels": ["后端开发", "Java"],
+        "skills": ["Java", "Spring", "MySQL"],
+        "welfareList": ["五险一金", "年终奖"],
+        "bossName": "李招聘",
+        "bossTitle": "技术总监",
+        "lastModifyTime": 1722470400000
+      },
+      {
+        "encryptJobId": "ffeeddccbb0011223344556677889900",
+        "encryptBrandId": "brandenc998877665544",
+        "encryptBossId": "bossenc998877665544",
+        "lid": "lid-demo-002",
+        "securityId": "sec_demo_ml_002",
+        "jobName": "机器学习工程师",
+        "salaryDesc": "30-50K",
+        "jobExperience": "3-5年",
+        "jobDegree": "硕士",
+        "cityName": "北京",
+        "areaDistrict": "朝阳区",
+        "businessDistrict": "望京",
+        "brandName": "示例智能",
+        "brandScaleName": "500-999人",
+        "brandStageName": "C轮",
+        "brandIndustry": "互联网",
+        "jobLabels": ["机器学习", "Python"],
+        "skills": ["Python", "PyTorch", "机器学习"],
+        "welfareList": ["五险一金"],
+        "bossName": "王招聘",
+        "bossTitle": "算法负责人",
+        "lastModifyTime": 1722556800000
+      }
+    ]
+  }
+}

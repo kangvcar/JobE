@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     ontology_version: str = Field(default_factory=default_ontology_version)
     ontology_dir: str = str(ONTOLOGY_ROOT)
 
-    # 采集频控。商业平台压到 3 秒以上，合规源可放宽（见 ADR 0001）。
+    # 采集频控。延迟只为降低空响，见 ADR 0001。
     collect_delay_seconds: float = 3.0
     collect_max_items: int = 2000
     liepin_enabled: bool = False

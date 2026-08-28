@@ -65,3 +65,22 @@ def test_moka_drops_manager_pii():
 def test_moka_empty_org_list_yields_nothing():
     snaps = list(MokaCollector(limiter=RateLimiter(0), orgs=[]).collect())
     assert snaps == []
+
+
+@respx.mock
+def test_moka_caps_per_org_so_later_tenants_are_reached():
+    body = json.loads((FIXTURES / "moka_jobs.json").read_text(encoding="utf-8"))
+    respx.route(method="GET", host="api.mokahr.com").mock(
+        return_value=httpx.Response(200, json=body)
+    )
+    snaps = list(
+        MokaCollector(
+            limiter=RateLimiter(0),
+            max_items=10,
+            max_per_org=1,
+            orgs=[("geely", "吉利"), ("zhihu", "知乎")],
+            modes=("social",),
+        ).collect()
+    )
+    assert len(snaps) == 2
+    assert {s.payload["org_id"] for s in snaps} == {"geely", "zhihu"}

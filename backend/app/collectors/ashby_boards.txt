@@ -1,0 +1,17 @@
+# Ashby Job Board 名称。每行：board_token<TAB>公司名
+# GET https://api.ashbyhq.com/posting-api/job-board/{token}?includeCompensation=true 探活。
+openai	OpenAI
+perplexity	Perplexity
+ramp	Ramp
+linear	Linear
+cursor	Cursor
+notion	Notion
+replit	Replit
+cohere	Cohere
+sentry	Sentry
+supabase	Supabase
+langchain	LangChain
+modal	Modal
+fireworks	Fireworks AI
+cognition	Cognition
+elevenlabs	ElevenLabs

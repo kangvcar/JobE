@@ -1,10 +1,10 @@
-"""个人信息必须在写入快照前丢弃，payload 里不得残留（ADR 0001）。"""
+"""联系人字段图谱用不上，写入快照前丢弃，payload 里不得残留。"""
 
 from __future__ import annotations
 
 from typing import Any
 
-# aae004/aae005：人社部联系人姓名与电话。其余为 Moka 招聘官网可能返回的负责人字段。
+# aae004/aae005：人社部联系人姓名与电话。其余为 Moka / BOSS 招聘接口可能返回的负责人字段。
 PII_KEYS = frozenset(
     {
         "aae004",
@@ -13,6 +13,8 @@ PII_KEYS = frozenset(
         "jobHrAssistant",
         "jobHiringManager",
         "jobInterviewer",
+        "bossName",
+        "bossInfo",
     }
 )
 

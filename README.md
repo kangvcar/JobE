@@ -40,6 +40,6 @@ uv run pytest
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — 主链路、存储分工与模块边界
 - [docs/adr/](./docs/adr/) — 关键决策及其取舍
 
-## 数据来源与合规
+## 数据来源
 
-主干数据来自人社部中国公共招聘网、Moka ATS 公开接口、Job-SDF 与 Chinese-SkillSpan 等合法来源；商业招聘平台仅做小样本、人工登录、低频只读的采集，不突破任何技术措施，不采集任何个人信息。取舍理由见 [ADR 0001](./docs/adr/0001-data-collection-boundary.md)。
+主干来源包括人社部中国公共招聘网、Moka ATS、猎聘、BOSS 直聘、Greenhouse / Lever / Ashby 等 ATS 公开接口，以及 Job-SDF、Chinese-SkillSpan 等学术数据集。采集以职位正文与时间戳为优先，不设合规边界。来源取舍见 [ADR 0001](./docs/adr/0001-data-collection-boundary.md)。

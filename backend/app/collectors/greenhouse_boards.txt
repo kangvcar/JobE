@@ -1,0 +1,17 @@
+# Greenhouse Job Board token。每行：board_token<TAB>公司名
+# GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true 探活。
+stripe	Stripe
+databricks	Databricks
+discord	Discord
+figma	Figma
+anthropic	Anthropic
+scaleai	Scale AI
+deepmind	Google DeepMind
+xai	xAI
+mongodb	MongoDB
+cloudflare	Cloudflare
+datadog	Datadog
+elastic	Elastic
+vercel	Vercel
+gitlab	GitLab
+shein	SHEIN

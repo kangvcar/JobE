@@ -7,7 +7,7 @@ from app.domain.models import Source
 MOHRSS = Source(
     id="mohrss",
     name="人社部中国公共招聘网",
-    license="政府公开招聘信息，仅用于研究与统计，不采集个人信息",
+    license="政府公开招聘信息",
     requires_login=False,
     is_leading_indicator=False,
 )
@@ -15,7 +15,7 @@ MOHRSS = Source(
 MOKA = Source(
     id="moka",
     name="Moka ATS 公开招聘官网",
-    license="招聘官网公开接口（免鉴权职位列表），不采集负责人联系方式",
+    license="招聘官网公开接口（免鉴权职位列表）",
     requires_login=False,
     is_leading_indicator=False,
 )
@@ -23,11 +23,51 @@ MOKA = Source(
 LIEPIN = Source(
     id="liepin",
     name="猎聘",
-    license="人工登录、单 IP 串行、低频只读；不突破技术措施，默认关闭（ADR 0001）",
+    license="登录态 Playwright 采集；开发默认关闭",
     requires_login=True,
     is_leading_indicator=False,
 )
 
-ALL_SOURCES: tuple[Source, ...] = (MOHRSS, MOKA, LIEPIN)
+ZHIPIN = Source(
+    id="zhipin",
+    name="BOSS直聘",
+    license="登录态 CDP/Playwright 采集；开发默认关闭",
+    requires_login=True,
+    is_leading_indicator=False,
+)
+
+GREENHOUSE = Source(
+    id="greenhouse",
+    name="Greenhouse Job Board API",
+    license="招聘官网公开接口（免鉴权职位列表）",
+    requires_login=False,
+    is_leading_indicator=False,
+)
+
+LEVER = Source(
+    id="lever",
+    name="Lever 公开职位接口",
+    license="招聘官网公开接口（免鉴权职位列表）",
+    requires_login=False,
+    is_leading_indicator=False,
+)
+
+ASHBY = Source(
+    id="ashby",
+    name="Ashby Job Board API",
+    license="招聘官网公开接口（免鉴权职位列表）",
+    requires_login=False,
+    is_leading_indicator=False,
+)
+
+ALL_SOURCES: tuple[Source, ...] = (
+    MOHRSS,
+    MOKA,
+    LIEPIN,
+    ZHIPIN,
+    GREENHOUSE,
+    LEVER,
+    ASHBY,
+)
 
 SOURCES_BY_ID: dict[str, Source] = {s.id: s for s in ALL_SOURCES}
