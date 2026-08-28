@@ -19,11 +19,13 @@ from app.graph.repository import (
     DIFF_PERIOD,
     GET_ROLE,
     PUT_OBSERVATION,
+    PUT_OBSERVATIONS,
     RECORD_CHANGE,
     ROLE_SKILLS,
     SNAPSHOT_AT,
     UPSERT_COMPETENCY,
     UPSERT_ROLE,
+    UPSERT_ROLES,
     UPSERT_SKILL,
     Neo4jGraphRepository,
     compute_competency_diff,
@@ -113,6 +115,36 @@ def test_put_observation_shards_by_period() -> None:
     assert params["period"] == "2026Q1"
     assert params["ontology_version"] == "v0"
     assert "REQUIRES {period: $period, ontology_version: $ontology_version}" in cypher
+
+
+def test_put_observations_unwinds_rows() -> None:
+    repo, fake = _repo()
+    assert repo.put_observations([]) == 0
+    obs = SkillObservation(
+        role_id="r1",
+        skill_id="s1",
+        period="2026Q1",
+        weight=0.8,
+        posting_count=12,
+        total_postings=40,
+        ontology_version="v0",
+    )
+    assert repo.put_observations([obs]) == 1
+    cypher, params, write = fake.last
+    assert cypher == PUT_OBSERVATIONS
+    assert write is True
+    assert params["rows"][0]["role_id"] == "r1"
+    assert "UNWIND $rows" in cypher
+
+
+def test_upsert_roles_unwinds_rows() -> None:
+    repo, fake = _repo()
+    assert repo.upsert_roles([]) == 0
+    assert repo.upsert_roles([Role(id="r1", name="后端", state=PublishState.PUBLISHED)]) == 1
+    cypher, params, write = fake.last
+    assert cypher == UPSERT_ROLES
+    assert write is True
+    assert params["rows"][0]["id"] == "r1"
 
 
 def test_put_observation_requires_role_id_and_valid_period() -> None:

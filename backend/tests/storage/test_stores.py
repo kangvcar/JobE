@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime
 from app.domain.models import Evidence, Posting, SkillObservation, Snapshot, Source, TextSpan
 from app.domain.normalization import normalize_title, period_from_date
 from app.storage.change_log import ChangeLogEntry, ChangeLogStore
+from app.storage.documents import PgDocumentStore
 from app.storage.evidence import PgEvidenceStore
 from app.storage.observations import ObservationStore
 from app.storage.postings import PgPostingStore
@@ -225,6 +226,13 @@ def test_posting_iter_and_count_exclude_duplicates():
     assert store.count_for_period("2026Q3") == 3
 
 
+def test_posting_count_all():
+    cur = ScriptedCursor([{"n": 104447}])
+    store = PgPostingStore(FakePool(cur))
+    assert store.count_all() == 104447
+    assert "SELECT COUNT(*) AS n FROM postings" in cur.queries[0][0]
+
+
 def test_storage_title_rules_match_collectors():
     assert normalize_title("JAVA 开发") == "java开发"
     assert period_from_date(date(2026, 4, 1)) == "2026Q2"
@@ -267,6 +275,37 @@ def test_evidence_save_and_get_many():
     got = store.get_many(["e1", "missing"])
     assert [g.id for g in got] == ["e1"]
     assert store.get_many([]) == []
+
+
+def test_evidence_save_many_skips_returning():
+    ev = Evidence(
+        id="e1",
+        source_id="moka",
+        posting_id="p1",
+        span=TextSpan(doc_id="d1", start=0, end=4),
+        quote="Java",
+        fetched_at=datetime(2026, 8, 1, tzinfo=UTC),
+        extractor="ac:skill.java",
+        confidence=0.9,
+    )
+    cur = ScriptedCursor([])
+    store = PgEvidenceStore(FakePool(cur))
+    assert store.save_many([]) == 0
+    assert store.save_many([ev]) == 1
+    sql, rows = cur.queries[0]
+    assert "INSERT INTO evidence" in sql
+    assert "RETURNING" not in sql
+    assert len(rows) == 1
+
+
+def test_document_save_many():
+    cur = ScriptedCursor([])
+    store = PgDocumentStore(FakePool(cur))
+    assert store.save_many([]) == 0
+    assert store.save_many([("p1", "posting", "精通 Java")]) == 1
+    sql, rows = cur.queries[0]
+    assert "INSERT INTO documents" in sql
+    assert len(rows) == 1
 
 
 def test_change_log_state_query_and_rollback():
@@ -331,3 +370,22 @@ def test_observation_store_empty_role_and_get():
     assert got[0].role_id is None
     assert store.get("sk1", "2026Q3", role_id="r1")[0].skill_id == "sk1"
     assert list(store.iter_for_period("2026Q3"))[0].period == "2026Q3"
+
+
+def test_observation_put_many():
+    obs = SkillObservation(
+        role_id="r1",
+        skill_id="sk1",
+        period="2026Q3",
+        weight=0.5,
+        posting_count=2,
+        total_postings=10,
+        ontology_version="v0",
+    )
+    cur = ScriptedCursor([])
+    store = ObservationStore(FakePool(cur))
+    assert store.put_many([]) == 0
+    assert store.put_many([obs]) == 1
+    sql, rows = cur.queries[0]
+    assert "INSERT INTO skill_observations" in sql
+    assert rows[0][1] == "r1"

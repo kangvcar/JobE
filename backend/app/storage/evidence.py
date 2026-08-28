@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from psycopg.types.json import Jsonb
 
 from app.domain.models import Evidence, TextSpan
@@ -15,6 +17,17 @@ INSERT INTO evidence (
 )
 ON CONFLICT (id) DO NOTHING
 RETURNING id
+"""
+
+INSERT_EVIDENCE_BATCH = """
+INSERT INTO evidence (
+    id, source_id, posting_id, doc_id, span_start, span_end,
+    page_index, bbox, quote, fetched_at, extractor, confidence
+) VALUES (
+    %s, %s, %s, %s, %s, %s,
+    %s, %s, %s, %s, %s, %s
+)
+ON CONFLICT (id) DO NOTHING
 """
 
 GET_ONE = """
@@ -83,6 +96,33 @@ class PgEvidenceStore:
                 )
                 row = cur.fetchone()
                 return row["id"] if row else evidence.id
+
+    def save_many(self, items: Sequence[Evidence]) -> int:
+        if not items:
+            return 0
+        rows = []
+        for evidence in items:
+            bbox = list(evidence.span.bbox) if evidence.span.bbox else None
+            rows.append(
+                (
+                    evidence.id,
+                    evidence.source_id,
+                    evidence.posting_id,
+                    evidence.span.doc_id,
+                    evidence.span.start,
+                    evidence.span.end,
+                    evidence.span.page_index,
+                    Jsonb(bbox) if bbox is not None else None,
+                    evidence.quote,
+                    evidence.fetched_at,
+                    evidence.extractor,
+                    evidence.confidence,
+                )
+            )
+        with self._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.executemany(INSERT_EVIDENCE_BATCH, rows)
+        return len(rows)
 
     def get(self, evidence_id: str) -> Evidence | None:
         with self._pool.connection() as conn:

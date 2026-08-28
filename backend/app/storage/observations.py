@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 from app.config import get_settings
 from app.domain.models import SkillObservation
@@ -82,6 +82,26 @@ class ObservationStore:
                         observation.ontology_version,
                     ),
                 )
+
+    def put_many(self, items: Sequence[SkillObservation]) -> int:
+        if not items:
+            return 0
+        rows = [
+            (
+                observation.skill_id,
+                _role_key(observation.role_id),
+                observation.period,
+                observation.weight,
+                observation.posting_count,
+                observation.total_postings,
+                observation.ontology_version,
+            )
+            for observation in items
+        ]
+        with self._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.executemany(UPSERT_OBS, rows)
+        return len(rows)
 
     def get(
         self,

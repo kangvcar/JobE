@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
 
 from app.collectors.postings import find_duplicate, posting_from_snapshot
@@ -35,6 +36,13 @@ from app.storage.postings import PgPostingStore
 from app.storage.snapshots import PgSnapshotStore
 
 EXTRACTOR = "ac"
+FLUSH_EVERY = 500
+PROGRESS_EVERY = 5000
+
+
+def _chunked(items: Sequence, size: int = FLUSH_EVERY):
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
 
 
 _BRACKET_RE = re.compile(r"【[^】]*】|\[[^\]]*\]|（[^）]*）|\([^)]*\)")
@@ -129,21 +137,41 @@ def extract_and_observe(
     evidence_store: PgEvidenceStore,
     observations: ObservationStore,
     vocab: list[SkillVocabEntry] | None = None,
+    flush_every: int = FLUSH_EVERY,
 ) -> dict[str, int]:
     vocab = vocab if vocab is not None else load_skill_vocab()
     ac, skill_ids = build_automaton(vocab)
     version = get_settings().ontology_version
     fetched_at = datetime.now(UTC)
 
-    # role_id -> name
     role_names: dict[str, str] = {}
-    # (role_id, period) -> posting ids that have description
     role_period_posts: dict[tuple[str, str], set[str]] = defaultdict(set)
-    # (role_id, period, skill_id) -> posting ids mentioning the skill
     role_skill_posts: dict[tuple[str, str, str], set[str]] = defaultdict(set)
     skills_of: dict[tuple[str, str], set[str]] = defaultdict(set)
     evidence_n = 0
     scanned = 0
+    doc_batch: list[tuple[str, str, str]] = []
+    ev_batch: list[Evidence] = []
+
+    def flush_docs_and_evidence() -> None:
+        nonlocal evidence_n
+        if doc_batch:
+            saver = getattr(documents, "save_many", None)
+            if saver is not None:
+                saver(doc_batch)
+            else:
+                for doc_id, kind, text in doc_batch:
+                    documents.save(doc_id, text, kind=kind)
+            doc_batch.clear()
+        if ev_batch:
+            saver = getattr(evidence_store, "save_many", None)
+            if saver is not None:
+                saver(ev_batch)
+            else:
+                for ev in ev_batch:
+                    evidence_store.save(ev)
+            evidence_n += len(ev_batch)
+            ev_batch.clear()
 
     for posting in posting_store.iter_all():
         rid = role_id_for(posting.title)
@@ -156,7 +184,7 @@ def extract_and_observe(
         if not text:
             continue
         scanned += 1
-        documents.save(posting.id, text, kind="posting")
+        doc_batch.append((posting.id, "posting", text))
         role_period_posts[(rid, period)].add(posting.id)
         seen: set[str] = set()
         for start, end, skill_id, surface in scan_text(text, ac, skill_ids):
@@ -165,20 +193,26 @@ def extract_and_observe(
             seen.add(skill_id)
             role_skill_posts[(rid, period, skill_id)].add(posting.id)
             skills_of[(rid, period)].add(skill_id)
-            ev = Evidence(
-                id=f"ev.{posting.id}.{skill_id}.{start}",
-                source_id=posting.source_id,
-                span=TextSpan(doc_id=posting.id, start=start, end=end),
-                quote=surface,
-                fetched_at=fetched_at,
-                extractor=f"{EXTRACTOR}:{skill_id}",
-                confidence=0.9,
-                posting_id=posting.id,
+            ev_batch.append(
+                Evidence(
+                    id=f"ev.{posting.id}.{skill_id}.{start}",
+                    source_id=posting.source_id,
+                    span=TextSpan(doc_id=posting.id, start=start, end=end),
+                    quote=surface,
+                    fetched_at=fetched_at,
+                    extractor=f"{EXTRACTOR}:{skill_id}",
+                    confidence=0.9,
+                    posting_id=posting.id,
+                )
             )
-            evidence_store.save(ev)
-            evidence_n += 1
+        if len(doc_batch) >= flush_every or len(ev_batch) >= flush_every:
+            flush_docs_and_evidence()
+        if scanned % PROGRESS_EVERY == 0:
+            print(f"  已扫描 {scanned} 职位，证据 {evidence_n + len(ev_batch)}", flush=True)
 
-    obs_n = 0
+    flush_docs_and_evidence()
+
+    obs_items: list[SkillObservation] = []
     for (rid, period), posts in role_period_posts.items():
         total = len(posts)
         if total == 0:
@@ -186,7 +220,7 @@ def extract_and_observe(
         skill_keys = skills_of.get((rid, period), set())
         for skill_id in skill_keys:
             count = len(role_skill_posts[(rid, period, skill_id)])
-            observations.put(
+            obs_items.append(
                 SkillObservation(
                     role_id=rid,
                     skill_id=skill_id,
@@ -197,13 +231,19 @@ def extract_and_observe(
                     ontology_version=version,
                 )
             )
-            obs_n += 1
+    putter = getattr(observations, "put_many", None)
+    if putter is not None:
+        for chunk in _chunked(obs_items, flush_every):
+            putter(chunk)
+    else:
+        for obs in obs_items:
+            observations.put(obs)
 
     return {
         "roles": len(role_names),
         "scanned": scanned,
         "evidence": evidence_n,
-        "observations": obs_n,
+        "observations": len(obs_items),
         "role_names": role_names,  # type: ignore[dict-item]
     }
 
@@ -216,37 +256,49 @@ def write_graph(
     skills: dict[str, Skill] | None = None,
 ) -> dict[str, int]:
     skills = skills if skills is not None else load_ontology_skills()
-    roles_n = 0
-    skills_n = 0
-    edges_n = 0
-    written_skills: set[str] = set()
-    written_roles: set[str] = set()
+    pending: list[SkillObservation] = []
+    roles_by_id: dict[str, Role] = {}
+    skill_ids: list[str] = []
+    seen_skills: set[str] = set()
 
     for obs in observations.iter_all():
         if not obs.role_id:
             continue
-        if obs.role_id not in written_roles:
-            repo.upsert_role(
-                Role(
-                    id=obs.role_id,
-                    name=role_names.get(obs.role_id, obs.role_id),
-                    state=PublishState.PUBLISHED,
-                )
+        if obs.role_id not in roles_by_id:
+            roles_by_id[obs.role_id] = Role(
+                id=obs.role_id,
+                name=role_names.get(obs.role_id, obs.role_id),
+                state=PublishState.PUBLISHED,
             )
-            written_roles.add(obs.role_id)
-            roles_n += 1
-        if obs.skill_id not in written_skills:
-            skill = skills.get(obs.skill_id) or Skill(
-                id=obs.skill_id,
-                name=obs.skill_id,
-                ontology_version=obs.ontology_version,
-            )
-            repo.upsert_skill(skill)
-            written_skills.add(obs.skill_id)
-            skills_n += 1
-        repo.put_observation(obs)
-        edges_n += 1
-    return {"roles": roles_n, "skills": skills_n, "edges": edges_n}
+        if obs.skill_id not in seen_skills:
+            seen_skills.add(obs.skill_id)
+            skill_ids.append(obs.skill_id)
+        pending.append(obs)
+
+    roles = list(roles_by_id.values())
+    upsert_roles = getattr(repo, "upsert_roles", None)
+    if upsert_roles is not None:
+        upsert_roles(roles)
+    else:
+        for role in roles:
+            repo.upsert_role(role)
+
+    for skill_id in skill_ids:
+        skill = skills.get(skill_id) or Skill(
+            id=skill_id,
+            name=skill_id,
+            ontology_version=get_settings().ontology_version,
+        )
+        repo.upsert_skill(skill)
+
+    put_many = getattr(repo, "put_observations", None)
+    if put_many is not None:
+        put_many(pending)
+    else:
+        for obs in pending:
+            repo.put_observation(obs)
+
+    return {"roles": len(roles), "skills": len(skill_ids), "edges": len(pending)}
 
 
 def run_pipeline(
@@ -258,9 +310,14 @@ def run_pipeline(
     observations: ObservationStore,
     repo: Neo4jGraphRepository,
 ) -> dict:
-    print("物化职位…", flush=True)
-    n_postings = materialize_postings(snapshot_store, posting_store)
-    print(f"  职位 {n_postings}", flush=True)
+    existing = getattr(posting_store, "count_all", lambda: 0)()
+    if existing > 0:
+        print(f"已有职位 {existing}，跳过物化", flush=True)
+        n_postings = existing
+    else:
+        print("物化职位…", flush=True)
+        n_postings = materialize_postings(snapshot_store, posting_store)
+        print(f"  职位 {n_postings}", flush=True)
     print("抽取技能点…", flush=True)
     extracted = extract_and_observe(
         posting_store=posting_store,

@@ -88,6 +88,10 @@ WHERE duplicate_of IS NULL
 ORDER BY published_at NULLS LAST
 """
 
+COUNT_ALL = """
+SELECT COUNT(*) AS n FROM postings
+"""
+
 
 def _spans(value: object) -> list[tuple[int, int]]:
     if not value:
@@ -198,3 +202,10 @@ class PgPostingStore:
                 rows = cur.fetchall()
         for row in rows:
             yield _row_to_posting(row)
+
+    def count_all(self) -> int:
+        with self._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(COUNT_ALL)
+                row = cur.fetchone()
+                return int(row["n"]) if row else 0

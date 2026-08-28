@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -133,6 +134,31 @@ SET req.weight = $weight,
     req.total_postings = $total_postings
 RETURN r.id AS role_id, s.id AS skill_id, req.period AS period
 """
+
+UPSERT_ROLES = """
+UNWIND $rows AS row
+MERGE (r:Role {id: row.id})
+SET r.name = row.name,
+    r.state = row.state
+"""
+
+PUT_OBSERVATIONS = """
+UNWIND $rows AS row
+MERGE (r:Role {id: row.role_id})
+MERGE (s:Skill {id: row.skill_id})
+ON CREATE SET s.ontology_version = row.ontology_version, s.name = row.skill_id
+MERGE (r)-[req:REQUIRES {period: row.period, ontology_version: row.ontology_version}]->(s)
+SET req.weight = row.weight,
+    req.posting_count = row.posting_count,
+    req.total_postings = row.total_postings
+"""
+
+_GRAPH_BATCH = 500
+
+
+def _chunked(items: Sequence, size: int = _GRAPH_BATCH):
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
 
 GET_ROLE = """
 MATCH (r:Role {id: $id})
@@ -360,6 +386,14 @@ class Neo4jGraphRepository:
         )
         return role.id
 
+    def upsert_roles(self, roles: Sequence[Role]) -> int:
+        if not roles:
+            return 0
+        payload = [{"id": role.id, "name": role.name, "state": role.state.value} for role in roles]
+        for chunk in _chunked(payload):
+            self._ex.run(UPSERT_ROLES, {"rows": list(chunk)}, write=True)
+        return len(roles)
+
     def upsert_skill(self, skill: Skill) -> str:
         self._ex.run(
             UPSERT_SKILL,
@@ -429,6 +463,29 @@ class Neo4jGraphRepository:
             },
             write=True,
         )
+
+    def put_observations(self, items: Sequence[SkillObservation]) -> int:
+        rows: list[dict[str, Any]] = []
+        for observation in items:
+            if observation.role_id is None:
+                raise ValueError("put_observation 需要 role_id 才能写入 Role-REQUIRES-Skill 分片边")
+            parse_period(observation.period)
+            rows.append(
+                {
+                    "role_id": observation.role_id,
+                    "skill_id": observation.skill_id,
+                    "period": observation.period,
+                    "ontology_version": observation.ontology_version,
+                    "weight": observation.weight,
+                    "posting_count": observation.posting_count,
+                    "total_postings": observation.total_postings,
+                }
+            )
+        if not rows:
+            return 0
+        for chunk in _chunked(rows):
+            self._ex.run(PUT_OBSERVATIONS, {"rows": list(chunk)}, write=True)
+        return len(rows)
 
     def get_role(self, role_id: str) -> Role | None:
         rows = self._ex.run(GET_ROLE, {"id": role_id})
